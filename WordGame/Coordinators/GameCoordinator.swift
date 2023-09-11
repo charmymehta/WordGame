@@ -17,7 +17,7 @@ class GameCoordinator: CoordinatorType {
     
     init(presenter: UINavigationController) {
         self.presenter = presenter
-        let gameViewModel = GameViewModel(correctTranslationProbability: 25)    // Probability between 1...100
+        let gameViewModel = GameViewModel(correctTranslationProbability: 25, maxTranslationsPerGame: 15, maxWrongAttemptsPerGame: 3) // Probability between 1...100%
         gameViewController = GameViewController()
         gameViewController.configure(with: gameViewModel)
     }

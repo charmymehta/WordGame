@@ -13,6 +13,8 @@ class GameViewController: UIViewController, ControllerType {
     typealias ViewModelType = GameViewModel
     private var viewModel: ViewModelType!
     
+    private var timer: Timer?
+    
     // MARK: - UI components
     private var attemptsStackView: UIStackView = {
         let stackView = UIStackView()
@@ -146,6 +148,7 @@ class GameViewController: UIViewController, ControllerType {
         self.viewModel = viewModel
         viewModel.output.updateAttemptsCounter = updateAttemptsCounter
         viewModel.output.updateTranslationPair = updateTranslationPair
+        viewModel.output.showGameOver = showGameOver
         
         viewModel.prepareTranslationPair()
     }
@@ -213,16 +216,43 @@ class GameViewController: UIViewController, ControllerType {
     private func updateTranslationPair(english: String, spanish: String) {
         englishLabel.text = english
         spanishLabel.text = spanish
+        startTimer()
+    }
+    
+    private func showGameOver() {
+        let alertController = UIAlertController(title: "Game Over!", message: "", preferredStyle: .alert)
+        alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
+            exit(0)
+        }))
+        present(alertController, animated: true, completion: nil)
+    }
+    
+    // MARK: - UI Logic
+    private func startTimer() {
+        timer = Timer.scheduledTimer(timeInterval: 5.0, target: self, selector: #selector(timesUp), userInfo: nil, repeats: false)
+    }
+    
+    @objc
+    func timesUp() {
+        timer?.invalidate()
+        let alertController = UIAlertController(title: "Time's Up!", message: "", preferredStyle: .alert)
+        alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: { [weak self] _ in
+            guard let self = self else { return }
+            self.viewModel.input.timesUp()
+        }))
+        present(alertController, animated: true, completion: nil)
     }
     
     // MARK: - UIActions
     @IBAction
     func correctButtonTapped(_ sender: UIButton) {
+        timer?.invalidate()
         viewModel.input.checkCorrectAnswer(true)
     }
     
     @IBAction
     func wrongButtonTapped(_ sender: UIButton) {
+        timer?.invalidate()
         viewModel.input.checkCorrectAnswer(false)
     }
 }

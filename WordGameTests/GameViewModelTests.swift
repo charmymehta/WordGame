@@ -14,7 +14,7 @@ final class GameViewModelTests: XCTestCase {
     
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.
-        subject = GameViewModel(correctTranslationProbability: 25)
+        subject = GameViewModel(correctTranslationProbability: 25, maxTranslationsPerGame: 15, maxWrongAttemptsPerGame: 3)
     }
 
     override func tearDownWithError() throws {
@@ -92,5 +92,40 @@ final class GameViewModelTests: XCTestCase {
         subject.input.checkCorrectAnswer(false)
         XCTAssertTrue(correctAttempts == 0)
         XCTAssertTrue(wrongAttempts == 1)
+    }
+    
+    func test_Game_Over_When_Max_Translations_Per_Game_Excceds() {
+        var showGameOverWasCalled = false
+        subject.output.showGameOver = {
+            showGameOverWasCalled = true
+        }
+        var askedTranslations = 0
+        for _ in 0...subject.maxTranslationsPerGame {
+            subject.currentTranslationPair = TranslationModel(english: "English Word", spanish: "Spanish Word", isCorrectTranslation: true)
+            subject.input.checkCorrectAnswer(true)
+            if showGameOverWasCalled {
+                break
+            }
+            askedTranslations += 1
+        }
+        XCTAssertTrue(askedTranslations == subject.maxTranslationsPerGame && showGameOverWasCalled)
+    }
+    
+    func test_Game_Over_When_Max_WrongAttempts_Per_Game_Excceds() {
+        var showGameOverWasCalled = false
+        subject.output.showGameOver = {
+            showGameOverWasCalled = true
+        }
+        
+        var askedTranslations = 0
+        for _ in 0...subject.maxTranslationsPerGame {
+            subject.currentTranslationPair = TranslationModel(english: "English Word", spanish: "Spanish Word", isCorrectTranslation: true)
+            subject.input.checkCorrectAnswer(false)
+            if showGameOverWasCalled {
+                break
+            }
+            askedTranslations += 1
+        }
+        XCTAssertTrue(askedTranslations < subject.maxTranslationsPerGame && showGameOverWasCalled)
     }
 }

@@ -10,12 +10,14 @@ import Foundation
 class GameViewModel: ViewModelProtocol {
     struct Input {
         var checkCorrectAnswer: (Bool) -> Void
+        var timesUp: () -> Void
     }
     
     /// Output values / events to Update UI view
     struct Output {
         var updateAttemptsCounter: (Int, Int) -> Void
         var updateTranslationPair: (String, String) -> Void
+        var showGameOver: () -> Void
     }
     
     var input: Input
@@ -23,23 +25,36 @@ class GameViewModel: ViewModelProtocol {
     var currentTranslationPair: TranslationModel?
 
     private let correctTranslationProbability: Int
+    let maxTranslationsPerGame: Int
+    let maxWrongAttemptsPerGame: Int
     private var translationList = [TranslationModel]()
     private var correctAttempts = 0
     private var wrongAttempts = 0
+    private var askedTranslations = 0
     
     // MARK: - Initialization
-    init(correctTranslationProbability: Int) {
-        input = Input(checkCorrectAnswer: {isCorrectTranslation in })
+    init(correctTranslationProbability: Int, maxTranslationsPerGame: Int, maxWrongAttemptsPerGame: Int) {
+        input = Input(checkCorrectAnswer: {isCorrectTranslation in },
+                      timesUp: {})
         output = Output(updateAttemptsCounter: {correctAttempts, wrongAttempts in },
-                        updateTranslationPair: {english, spanish in })
+                        updateTranslationPair: {english, spanish in },
+                        showGameOver: {})
         self.correctTranslationProbability = correctTranslationProbability
+        self.maxTranslationsPerGame = maxTranslationsPerGame
+        self.maxWrongAttemptsPerGame = maxWrongAttemptsPerGame
+        
         input.checkCorrectAnswer = checkCorrectAnswer
+        input.timesUp = timesUp
         translationList = getTranslations()
     }
     
     // MARK: - Business logic
     func prepareTranslationPair() {
         currentTranslationPair = nil
+        guard askedTranslations < maxTranslationsPerGame, wrongAttempts < maxWrongAttemptsPerGame else {
+            output.showGameOver()
+            return
+        }
         guard !translationList.isEmpty, correctTranslationProbability > 0 && correctTranslationProbability <= 100 else {
             return
         }
@@ -80,6 +95,7 @@ class GameViewModel: ViewModelProtocol {
         let translationPair = TranslationModel(english: englishWord, spanish: randomSpanishWord, isCorrectTranslation: randomSpanishWord == correctTranslation)
         self.currentTranslationPair = translationPair
         output.updateTranslationPair(translationPair.english, translationPair.spanish)
+        askedTranslations += 1
     }
     
     private func checkCorrectAnswer(isCorrectTranslation: Bool) {
@@ -91,6 +107,12 @@ class GameViewModel: ViewModelProtocol {
         } else {
             wrongAttempts += 1
         }
+        output.updateAttemptsCounter(correctAttempts, wrongAttempts)
+        prepareTranslationPair()
+    }
+    
+    private func timesUp() {
+        wrongAttempts += 1
         output.updateAttemptsCounter(correctAttempts, wrongAttempts)
         prepareTranslationPair()
     }
